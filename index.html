@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Frog Clicker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #000000);
+            --hint: var(--tg-theme-hint-color, #999999);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .container { text-align: center; }
+
+        #score {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .hint {
+            color: var(--hint);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .coin-wrapper {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.05s;
+        }
+
+        .coin-wrapper:active {
+            transform: scale(0.92);
+        }
+
+        .coin {
+            width: 220px;
+            height: 220px;
+            background: linear-gradient(145deg, #f1c40f, #e67e22);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            box-shadow: 0 15px 35px rgba(230, 126, 34, 0.4), 
+                        inset 0 -8px 0 rgba(0,0,0,0.1);
+            border: 5px solid #fff;
+        }
+
+        /* Анимация вылетающих цифр */
+        .plus-one {
+            position: absolute;
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 24px;
+            animation: moveUp 0.6s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes moveUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="score">0</div>
+        <div class="hint">монет добыто</div>
+        
+        <div class="coin-wrapper" id="clicker">
+            <div class="coin">💎</div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const clicker = document.getElementById('clicker');
+        const scoreDisplay = document.getElementById('score');
+        
+        let score = 0;
+
+        tg.expand();
+        tg.ready();
+
+        clicker.addEventListener('click', (e) => {
+            score++;
+            scoreDisplay.innerText = score;
+
+            // Вибрация (для мобилок)
+            tg.HapticFeedback.impactOccurred('medium');
+
+            // Создаем эффект +1
+            const plus = document.createElement('div');
+            plus.innerText = '+1';
+            plus.className = 'plus-one';
+            plus.style.left = e.clientX - 20 + 'px';
+            plus.style.top = e.clientY - 40 + 'px';
+            document.body.appendChild(plus);
+
+            setTimeout(() => plus.remove(), 600);
+        });
+
+        // Настраиваем главную кнопку снизу (опционально)
+        tg.MainButton.setText("СОХРАНИТЬ ПРОГРЕСС");
+        tg.MainButton.show();
+        tg.MainButton.onClick(() => {
+            tg.sendData(JSON.stringify({final_score: score}));
+            tg.close();
+        });
+    </script>
+</body>
+</html>
