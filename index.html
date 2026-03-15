@@ -21,7 +21,7 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             overflow: hidden;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
@@ -30,9 +30,10 @@
         .container { text-align: center; }
 
         #score {
-            font-size: 48px;
+            font-size: 52px;
             font-weight: 800;
             margin-bottom: 5px;
+            font-variant-numeric: tabular-nums; /* Чтобы цифры не прыгали */
         }
 
         .hint {
@@ -52,27 +53,22 @@
             justify-content: center;
         }
 
-        /* Эффект нажатия: картинка немного уменьшается */
         .coin-wrapper:active {
             transform: scale(0.9);
         }
 
         .coin {
-            width: 250px; /* Размер можно подправить под дизайн в Figma */
+            width: 250px;
             height: 250px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .coin img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            pointer-events: none; /* Чтобы клик шел на wrapper */
+            pointer-events: none;
         }
 
-        /* Анимация всплывающих цифр */
         .plus-one {
             position: absolute;
             color: #27ae60;
@@ -92,8 +88,8 @@
 <body>
 
     <div class="container">
-        <div id="score">0</div>
-        <div class="hint">монет добыто</div>
+        <div id="score">0.00000</div>
+        <div class="hint">баланс монет</div>
         
         <div class="coin-wrapper" id="clicker">
             <div class="coin">
@@ -106,37 +102,54 @@
         const tg = window.Telegram.WebApp;
         const clicker = document.getElementById('clicker');
         const scoreDisplay = document.getElementById('score');
-        
-        let score = 0;
+
+        // Логика получения баланса из URL параметров
+        const urlParams = new URLSearchParams(window.location.search);
+        let initialValue = parseFloat(urlParams.get('balance')) || 0.00000;
+        let currentScore = initialValue;
+
+        // Устанавливаем начальный текст
+        scoreDisplay.innerText = currentScore.toFixed(5);
 
         tg.expand();
         tg.ready();
 
         clicker.addEventListener('click', (e) => {
-            score++;
-            scoreDisplay.innerText = score;
+            // Прибавляем строго 0.01
+            currentScore += 0.01;
+            scoreDisplay.innerText = currentScore.toFixed(5);
 
-            // Вибрация
             tg.HapticFeedback.impactOccurred('light');
 
-            // Создаем эффект +1 в месте клика
+            // Анимация +0.01
             const plus = document.createElement('div');
-            plus.innerText = '+1';
+            plus.innerText = '+0.01';
             plus.className = 'plus-one';
             
-            // Центрируем цифру относительно места клика
-            plus.style.left = (e.clientX || e.touches[0].clientX) - 15 + 'px';
-            plus.style.top = (e.clientY || e.touches[0].clientY) - 30 + 'px';
+            // Определяем координаты клика (мышь или тач)
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            plus.style.left = x - 25 + 'px';
+            plus.style.top = y - 30 + 'px';
             
             document.body.appendChild(plus);
             setTimeout(() => plus.remove(), 600);
         });
 
-        // Кнопка сохранения
+        // Настройка главной кнопки Telegram
         tg.MainButton.setText("СОХРАНИТЬ ПРОГРЕСС");
         tg.MainButton.show();
+        
         tg.MainButton.onClick(() => {
-            tg.sendData(JSON.stringify({final_score: score}));
+            // Считаем, сколько именно намайнили (разница)
+            const minedAmount = currentScore - initialValue;
+            
+            // Отправляем объект с данными боту
+            tg.sendData(JSON.stringify({
+                diff: minedAmount.toFixed(5),
+                total: currentScore.toFixed(5)
+            }));
             tg.close();
         });
     </script>
