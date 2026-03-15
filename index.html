@@ -32,7 +32,7 @@
         }
 
         .header { text-align: center; margin-top: 10px; flex: 0; }
-        #score { font-size: 48px; font-weight: 900; margin: 0; }
+        #score { font-size: 48px; font-weight: 900; margin: 0; letter-spacing: -1px; }
         .hint { color: var(--hint); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; }
 
         .main-game {
@@ -44,7 +44,6 @@
             width: 100%;
         }
 
-        /* Обертка для эффекта наклона */
         .coin-wrapper {
             position: relative;
             perspective: 1000px;
@@ -59,22 +58,21 @@
             width: 240px;
             height: auto;
             display: block;
-            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.15));
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.12));
         }
 
-        /* Полоска энергии */
         .energy-container {
             width: 240px;
             margin-top: 40px;
-            text-align: left;
         }
 
         .energy-label {
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 5px;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 6px;
             display: flex;
             justify-content: space-between;
+            text-transform: uppercase;
         }
 
         .energy-bar {
@@ -104,26 +102,26 @@
         .stat-card {
             background-color: var(--sec-bg);
             padding: 15px;
-            border-radius: 16px;
+            border-radius: 18px;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.04);
         }
 
         .stat-label {
             display: block;
             color: var(--hint);
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             margin-bottom: 4px;
         }
 
-        .stat-value { font-size: 18px; font-weight: 700; color: var(--accent); }
+        .stat-value { font-size: 18px; font-weight: 800; color: var(--accent); }
 
         .plus-one {
             position: absolute;
             color: var(--accent);
-            font-weight: bold;
+            font-weight: 900;
             font-size: 26px;
             animation: moveUp 0.6s ease-out forwards;
             pointer-events: none;
@@ -182,6 +180,11 @@
         const energyFill = document.getElementById('energy-fill');
         const energyText = document.getElementById('energy-text');
 
+        // --- НАСТРОЙКИ ---
+        let clickPower = 0.01; // СКОЛЬКО ДАЕТ 1 КЛИК
+        let energyRegen = 1;    // СКОЛЬКО ЭНЕРГИИ ВОССТАНОВИТЬ
+        // -----------------
+
         let initialValue = parseFloat(new URLSearchParams(window.location.search).get('balance')) || 0.00000;
         let currentScore = initialValue;
         let clicks = 0;
@@ -198,26 +201,23 @@
                 return;
             }
 
-            // Математика
             energy -= 1;
-            currentScore += 0.01;
+            currentScore += clickPower;
             clicks++;
             
             updateUI();
 
-            // Эффект наклона (Tilt)
+            // Тилт (наклон) — уменьшил интенсивность (делим на 15 вместо 5)
             const rect = clicker.getBoundingClientRect();
             const x = e.clientX - rect.left - rect.width / 2;
             const y = e.clientY - rect.top - rect.height / 2;
-            frogCoin.style.transform = `perspective(1000px) scale(0.95) rotateX(${-y/5}deg) rotateY(${x/5}deg)`;
+            frogCoin.style.transform = `perspective(1000px) scale(0.96) rotateX(${-y/15}deg) rotateY(${x/15}deg)`;
             
             setTimeout(() => {
                 frogCoin.style.transform = 'perspective(1000px) scale(1) rotateX(0) rotateY(0)';
             }, 100);
 
             tg.HapticFeedback.impactOccurred('light');
-
-            // Число вылетает
             createPlus(e);
         });
 
@@ -233,7 +233,7 @@
 
         function createPlus(e) {
             const plus = document.createElement('div');
-            plus.innerText = '+0.01';
+            plus.innerText = `+${clickPower}`;
             plus.className = 'plus-one';
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
@@ -243,10 +243,9 @@
             setTimeout(() => plus.remove(), 600);
         }
 
-        // Регенерация энергии: +1 каждые 2 секунды
         setInterval(() => {
             if (energy < maxEnergy) {
-                energy = Math.min(maxEnergy, energy + 1);
+                energy = Math.min(maxEnergy, energy + energyRegen);
                 updateUI();
             }
         }, 2000);
