@@ -32,7 +32,7 @@
         }
 
         .header { text-align: center; margin-top: 10px; flex: 0; }
-        #score { font-size: 48px; font-weight: 900; margin: 0; letter-spacing: -1px; }
+        #score { font-size: 44px; font-weight: 900; margin: 0; letter-spacing: -1px; }
         .hint { color: var(--hint); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; }
 
         .main-game {
@@ -116,7 +116,7 @@
             margin-bottom: 4px;
         }
 
-        .stat-value { font-size: 18px; font-weight: 800; color: var(--accent); }
+        .stat-value { font-size: 16px; font-weight: 800; color: var(--accent); }
 
         .plus-one {
             position: absolute;
@@ -181,8 +181,8 @@
         const energyText = document.getElementById('energy-text');
 
         // --- НАСТРОЙКИ ---
-        let clickPower = 0.00001; // СКОЛЬКО ДАЕТ 1 КЛИК
-        let energyRegen = 1;    // СКОЛЬКО ЭНЕРГИИ ВОССТАНОВИТЬ
+        let clickPower = 0.00001;
+        let energyRegen = 1;
         // -----------------
 
         let initialValue = parseFloat(new URLSearchParams(window.location.search).get('balance')) || 0.00000;
@@ -191,7 +191,9 @@
         let energy = 100;
         const maxEnergy = 100;
 
-        scoreDisplay.innerText = currentScore.toFixed(5);
+        // Начальная отрисовка
+        updateUI();
+
         tg.expand();
         tg.ready();
 
@@ -207,7 +209,6 @@
             
             updateUI();
 
-            // Тилт (наклон) — уменьшил интенсивность (делим на 15 вместо 5)
             const rect = clicker.getBoundingClientRect();
             const x = e.clientX - rect.left - rect.width / 2;
             const y = e.clientY - rect.top - rect.height / 2;
@@ -222,9 +223,13 @@
         });
 
         function updateUI() {
-            scoreDisplay.innerText = currentScore.toFixed(5);
+            // Форматируем до 5 знаков и добавляем ATC
+            scoreDisplay.innerText = currentScore.toFixed(5) + " ATC";
             clicksDisplay.innerText = clicks;
-            sessionDisplay.innerText = (currentScore - initialValue).toFixed(2);
+            
+            // Заработано теперь тоже с 5 знаками
+            let mined = currentScore - initialValue;
+            sessionDisplay.innerText = mined.toFixed(5);
             
             const energyPercent = (energy / maxEnergy) * 100;
             energyFill.style.width = `${energyPercent}%`;
@@ -233,7 +238,8 @@
 
         function createPlus(e) {
             const plus = document.createElement('div');
-            plus.innerText = `+${clickPower}`;
+            // Для анимации +0.00001
+            plus.innerText = `+${clickPower.toFixed(5)}`;
             plus.className = 'plus-one';
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
