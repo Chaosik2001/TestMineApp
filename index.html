@@ -21,9 +21,10 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .container { text-align: center; }
@@ -31,52 +32,60 @@
         #score {
             font-size: 48px;
             font-weight: 800;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         .hint {
             color: var(--hint);
             margin-bottom: 30px;
             font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .coin-wrapper {
             position: relative;
             cursor: pointer;
-            transition: transform 0.05s;
-        }
-
-        .coin-wrapper:active {
-            transform: scale(0.92);
-        }
-
-        .coin {
-            width: 220px;
-            height: 220px;
-            background: linear-gradient(145deg, #f1c40f, #e67e22);
-            border-radius: 50%;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 80px;
-            box-shadow: 0 15px 35px rgba(230, 126, 34, 0.4), 
-                        inset 0 -8px 0 rgba(0,0,0,0.1);
-            border: 5px solid #fff;
         }
 
-        /* Анимация вылетающих цифр */
+        /* Эффект нажатия: картинка немного уменьшается */
+        .coin-wrapper:active {
+            transform: scale(0.9);
+        }
+
+        .coin {
+            width: 250px; /* Размер можно подправить под дизайн в Figma */
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .coin img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none; /* Чтобы клик шел на wrapper */
+        }
+
+        /* Анимация всплывающих цифр */
         .plus-one {
             position: absolute;
             color: #27ae60;
             font-weight: bold;
-            font-size: 24px;
+            font-size: 28px;
             animation: moveUp 0.6s ease-out forwards;
             pointer-events: none;
+            z-index: 10;
         }
 
         @keyframes moveUp {
             0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-100px); }
+            100% { opacity: 0; transform: translateY(-120px); }
         }
     </style>
 </head>
@@ -87,7 +96,9 @@
         <div class="hint">монет добыто</div>
         
         <div class="coin-wrapper" id="clicker">
-            <div class="coin">⛏</div>
+            <div class="coin">
+                <img src="button.png" alt="Mining Button">
+            </div>
         </div>
     </div>
 
@@ -105,21 +116,23 @@
             score++;
             scoreDisplay.innerText = score;
 
-            // Вибрация (для мобилок)
-            tg.HapticFeedback.impactOccurred('medium');
+            // Вибрация
+            tg.HapticFeedback.impactOccurred('light');
 
-            // Создаем эффект +1
+            // Создаем эффект +1 в месте клика
             const plus = document.createElement('div');
             plus.innerText = '+1';
             plus.className = 'plus-one';
-            plus.style.left = e.clientX - 20 + 'px';
-            plus.style.top = e.clientY - 40 + 'px';
+            
+            // Центрируем цифру относительно места клика
+            plus.style.left = (e.clientX || e.touches[0].clientX) - 15 + 'px';
+            plus.style.top = (e.clientY || e.touches[0].clientY) - 30 + 'px';
+            
             document.body.appendChild(plus);
-
             setTimeout(() => plus.remove(), 600);
         });
 
-        // Настраиваем главную кнопку снизу (опционально)
+        // Кнопка сохранения
         tg.MainButton.setText("СОХРАНИТЬ ПРОГРЕСС");
         tg.MainButton.show();
         tg.MainButton.onClick(() => {
