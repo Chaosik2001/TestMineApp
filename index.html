@@ -12,18 +12,19 @@
             --hint: var(--tg-theme-hint-color, #999999);
             --sec-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
             --accent: #27ae60;
+            --energy: #f1c40f;
         }
 
         body {
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             height: 100vh;
-            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             overflow: hidden;
             box-sizing: border-box;
             user-select: none;
@@ -31,72 +32,93 @@
         }
 
         .header { text-align: center; margin-top: 10px; flex: 0; }
-        #score { font-size: 46px; font-weight: 900; margin: 0; letter-spacing: -1px; }
-        .hint-main { color: var(--hint); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; }
+        #score { font-size: 48px; font-weight: 900; margin: 0; }
+        .hint { color: var(--hint); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; }
 
         .main-game {
             flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             width: 100%;
         }
 
+        /* Обертка для эффекта наклона */
         .coin-wrapper {
             position: relative;
-            cursor: pointer;
-            transition: transform 0.08s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            perspective: 1000px;
         }
 
-        .coin-wrapper:active { transform: scale(0.92); }
+        .coin {
+            transition: transform 0.1s;
+            transform-style: preserve-3d;
+        }
 
         .coin img {
-            width: 230px;
+            width: 240px;
             height: auto;
             display: block;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.15));
         }
 
-        /* Сетка статистики */
+        /* Полоска энергии */
+        .energy-container {
+            width: 240px;
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .energy-label {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .energy-bar {
+            width: 100%;
+            height: 10px;
+            background: var(--sec-bg);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #energy-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #f1c40f, #f39c12);
+            transition: width 0.2s;
+        }
+
         .stats-container {
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 2 колонки */
-            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
             width: 100%;
-            max-width: 360px;
+            max-width: 350px;
             margin-bottom: 30px;
         }
 
         .stat-card {
             background-color: var(--sec-bg);
-            padding: 14px;
-            border-radius: 18px;
+            padding: 15px;
+            border-radius: 16px;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.04);
-        }
-
-        /* Широкая плашка вниз */
-        .stat-card.wide {
-            grid-column: span 2;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 20px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .stat-label {
             display: block;
             color: var(--hint);
-            font-size: 10px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
-        .stat-value {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--accent);
-        }
+        .stat-value { font-size: 18px; font-weight: 700; color: var(--accent); }
 
         .plus-one {
             position: absolute;
@@ -118,28 +140,33 @@
 
     <div class="header">
         <p id="score">0.00000</p>
-        <span class="hint-main">Баланс монет</span>
+        <span class="hint">Твой баланс</span>
     </div>
 
     <div class="main-game">
         <div class="coin-wrapper" id="clicker">
-            <div class="coin">
+            <div class="coin" id="frog-coin">
                 <img src="button.png" alt="Frog Button">
+            </div>
+        </div>
+
+        <div class="energy-container">
+            <div class="energy-label">
+                <span>⚡ Энергия</span>
+                <span id="energy-text">100/100</span>
+            </div>
+            <div class="energy-bar">
+                <div id="energy-fill"></div>
             </div>
         </div>
     </div>
 
     <div class="stats-container">
         <div class="stat-card">
-            <span class="stat-label">Клики</span>
+            <span class="stat-label">Кликов</span>
             <span class="stat-value" id="clicks-count">0</span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">Скорость</span>
-            <span class="stat-value" id="cps-value">0.0</span>
-        </div>
-        
-        <div class="stat-card wide">
             <span class="stat-label">За сессию</span>
             <span class="stat-value" id="session-mined">0.00</span>
         </div>
@@ -148,73 +175,90 @@
     <script>
         const tg = window.Telegram.WebApp;
         const clicker = document.getElementById('clicker');
+        const frogCoin = document.getElementById('frog-coin');
         const scoreDisplay = document.getElementById('score');
         const clicksDisplay = document.getElementById('clicks-count');
         const sessionDisplay = document.getElementById('session-mined');
-        const cpsDisplay = document.getElementById('cps-value');
+        const energyFill = document.getElementById('energy-fill');
+        const energyText = document.getElementById('energy-text');
 
-        // Параметры из ссылки
-        const urlParams = new URLSearchParams(window.location.search);
-        let initialValue = parseFloat(urlParams.get('balance')) || 0.00000;
+        let initialValue = parseFloat(new URLSearchParams(window.location.search).get('balance')) || 0.00000;
         let currentScore = initialValue;
         let clicks = 0;
-        let clickTimes = [];
+        let energy = 100;
+        const maxEnergy = 100;
 
-        // Стартовое значение
         scoreDisplay.innerText = currentScore.toFixed(5);
-
         tg.expand();
         tg.ready();
 
         clicker.addEventListener('click', (e) => {
-            const now = Date.now();
-            clickTimes.push(now);
+            if (energy <= 0) {
+                tg.HapticFeedback.notificationOccurred('error');
+                return;
+            }
 
+            // Математика
+            energy -= 1;
             currentScore += 0.01;
             clicks++;
             
-            // Обновляем UI
-            scoreDisplay.innerText = currentScore.toFixed(5);
-            clicksDisplay.innerText = clicks;
-            sessionDisplay.innerText = (currentScore - initialValue).toFixed(2);
+            updateUI();
+
+            // Эффект наклона (Tilt)
+            const rect = clicker.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            frogCoin.style.transform = `perspective(1000px) scale(0.95) rotateX(${-y/5}deg) rotateY(${x/5}deg)`;
+            
+            setTimeout(() => {
+                frogCoin.style.transform = 'perspective(1000px) scale(1) rotateX(0) rotateY(0)';
+            }, 100);
 
             tg.HapticFeedback.impactOccurred('light');
 
-            // Анимация вылетающей цифры
+            // Число вылетает
+            createPlus(e);
+        });
+
+        function updateUI() {
+            scoreDisplay.innerText = currentScore.toFixed(5);
+            clicksDisplay.innerText = clicks;
+            sessionDisplay.innerText = (currentScore - initialValue).toFixed(2);
+            
+            const energyPercent = (energy / maxEnergy) * 100;
+            energyFill.style.width = `${energyPercent}%`;
+            energyText.innerText = `${Math.floor(energy)}/${maxEnergy}`;
+        }
+
+        function createPlus(e) {
             const plus = document.createElement('div');
             plus.innerText = '+0.01';
             plus.className = 'plus-one';
-            
-            // Координаты клика
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
-            
             plus.style.left = x - 25 + 'px';
             plus.style.top = y - 30 + 'px';
-            
             document.body.appendChild(plus);
             setTimeout(() => plus.remove(), 600);
-        });
+        }
 
-        // Расчет скорости клика (CPS)
+        // Регенерация энергии: +1 каждые 2 секунды
         setInterval(() => {
-            const now = Date.now();
-            // Оставляем клики только за последнюю 1 секунду
-            clickTimes = clickTimes.filter(t => now - t < 1000);
-            cpsDisplay.innerText = clickTimes.length.toFixed(1);
-        }, 100);
+            if (energy < maxEnergy) {
+                energy = Math.min(maxEnergy, energy + 1);
+                updateUI();
+            }
+        }, 2000);
 
-        // Кнопка сохранения в Telegram
         tg.MainButton.setText("СОХРАНИТЬ ПРОГРЕСС");
         tg.MainButton.show();
-        
         tg.MainButton.onClick(() => {
-            const result = {
+            tg.sendData(JSON.stringify({
                 diff: (currentScore - initialValue).toFixed(5),
                 total: currentScore.toFixed(5),
                 clicks: clicks
-            };
-            tg.sendData(JSON.stringify(result));
+            }));
             tg.close();
         });
     </script>
